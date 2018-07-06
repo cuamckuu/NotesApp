@@ -10,7 +10,6 @@ class Note:
         self.title = title
         self.text = text
         self.date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        self.place = place
 
     def __str__(self):
         return "{date} \n{name} \n{text}\n\n".format(date=self.date,\
@@ -18,15 +17,15 @@ class Note:
                                                      text=self.text)
 
 class Manager:
-    def __init__(self, filename):
+    def __init__(self, filename="notes"):
         self.filename = filename
         self.notes = []
 
-        try:
-            with open(filename, "rb") as file:
-                self.notes = pickle.load(file)
-        except:
-            print("Can't read file")
+        #try:
+        with open(filename, "rb") as file:
+            self.notes = pickle.load(file)
+        #except:
+        #    print("Can't read file")
 
     def add_note(self, note):
         self.notes.append(note)
@@ -58,43 +57,74 @@ class Manager:
 
 
 class Generator:
-    def __init__(self, notes):
+    def __init__(self, notes=[]):
         self.doc, self.tag, self.text = Doc().tagtext()
         doc, tag, text = self.doc, self.tag, self.text
 
         doc.asis("<!DOCTYPE html>")
         with tag("html"):
-            with tag("head"):
-                with tag("title"):
-                    text("Notes App")
+            doc.asis(self.get_head())
+            doc.asis(self.get_body(notes))
 
-                doc.stag("link",
-                         href="https://fonts.googleapis.com/css?family=Fjalla+One",
-                         rel="stylesheet")
+    def get_head(self):
+        doc, tag, text = Doc().tagtext()
+        with tag("head"):
+            with tag("title"):
+                text("Notes App")
 
-                doc.stag("link", rel="stylesheet", type="text/css", href="style.css")
+            doc.stag("meta", charset="utf-8")
+            doc.stag("link",
+                     href="https://fonts.googleapis.com/css?family=Fjalla+One",
+                     rel="stylesheet")
 
-            with tag("body"):
-                with tag("div", ("class", "background")):
-                    with tag("h1"):
-                            text("Notes App")
-                    for note in notes:
-                        with tag("div", ("class", "note")):
-                            with tag("i", ("class", "date")):
-                                text(note.date)
+            doc.stag("link",
+                     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
+                     rel="stylesheet")
 
-                            doc.stag("br")
+            doc.stag("link", href="./style.css", rel="stylesheet")
+        return doc.getvalue()
 
-                            with tag("b", ("class", "title")):
-                                text(note.title)
+    def get_button(self):
+        doc, tag, text = Doc().tagtext()
+        with tag("div", ("class", "del-btn")):
+            with tag("button"):
+                text("Delete this")
+        return doc.getvalue()
 
-                            doc.stag("br")
 
-                            with tag("text"):
-                                text(note.text)
+    def get_note(self, note):
+        doc, tag, text = Doc().tagtext()
+        with tag("div", ("class", "note")):
+            with tag("i", ("class", "date")):
+                text(note.date)
+            doc.asis(self.get_button())
+            doc.stag("hr")
 
-                            doc.stag("br")
-                            doc.stag("br")
+            with tag("b", ("class", "title")):
+                text(note.title)
+            doc.stag("br")
+
+            with tag("text"):
+                text(note.text)
+
+            doc.stag("br")
+            doc.stag("br")
+        return doc.getvalue()
+
+
+    def get_body(self, notes):
+        doc, tag, text = Doc().tagtext()
+        with tag("body"):
+            with tag("div", ("class", "background")):
+                with tag("h1"):
+                    text("Notes App ")
+                    with tag("i", ("class", "fa fa-heart")):
+                        text(" ")
+
+                for note in notes:
+                    doc.asis(self.get_note(note))
+
+        return doc.getvalue()
 
     def get_html(self):
         return indent(self.doc.getvalue())

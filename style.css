@@ -1,3 +1,10 @@
+h1{
+    text-align: center;
+    text-shadow: 4px 3px 6px rgba(0, 0, 0, 0.4);
+    color: rgb(130, 77, 200);
+}
+
+
 .date{
 }
 
@@ -9,16 +16,20 @@
 }
 
 .background{
-    width: 50%;
+    width: 100%;
+    max-width: 700px;
     padding: 5px 10px 25px 10px;
-    border-radius: 10px;
-    border-style: dashed;
 }
 
 .note {
   background: #f9f9f9;
-  border-left: 10px solid #6b2ac5;
+  border-left: 10px solid rgb(130, 77, 200);
   margin: 1.5em 10px;
   padding: 0.5em 10px;
   box-shadow: 0px 0px 10px 0px #ccc;
+}
+
+.del-btn {
+    float: right;
+    display: inline;
 }
