@@ -4,9 +4,10 @@ from os import system
 import datetime
 import pickle
 from yattag import Doc, indent
+from markdown import markdown
 
 class Note:
-    def __init__(self, title, text, place=None):
+    def __init__(self, title, text):
         self.title = title
         self.text = text
         self.date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -17,15 +18,15 @@ class Note:
                                                      text=self.text)
 
 class Manager:
-    def __init__(self, filename="notes"):
+    def __init__(self, filename="./notes"):
         self.filename = filename
         self.notes = []
 
-        #try:
-        with open(filename, "rb") as file:
-            self.notes = pickle.load(file)
-        #except:
-        #    print("Can't read file")
+        try:
+            with open(filename, "rb") as file:
+                self.notes = pickle.load(file)
+        except:
+            print("Can't read file")
 
     def add_note(self, note):
         self.notes.append(note)
@@ -44,17 +45,22 @@ class Manager:
         text = input("Enter text: ")
         return Note(title, text)
 
+    def del_note(self, num):
+        for i, note in enumerate(reversed(self.notes[:])):
+            if i == num:
+                self.notes.remove(note)
+
     def print_menu(self):
         system("clear")
         print("Choose mode:")
         print("1.New note")
         print("2.View notes")
-        print("3.Exit")
+        print("3.Save as HTML")
+        print("4.Exit")
 
     def save_with_pickle(self):
         with open(self.filename, "wb+") as file:
             pickle.dump(self.notes, file)
-
 
 class Generator:
     def __init__(self, notes=[]):
@@ -82,47 +88,64 @@ class Generator:
                      rel="stylesheet")
 
             doc.stag("link", href="./style.css", rel="stylesheet")
+
+            with tag("script", src="scripts.js", type="text/javascript"):
+                pass
+
         return doc.getvalue()
 
-    def get_button(self):
+    def get_button(self, num):
         doc, tag, text = Doc().tagtext()
-        with tag("div", ("class", "del-btn")):
-            with tag("button"):
-                text("Delete this")
+        with tag("button",   ("class", "del-btn"),
+                             ("onclick", "deleteNote({})".format(num))):
+            text("Delete this")
+
         return doc.getvalue()
 
 
-    def get_note(self, note):
+    def get_note(self, note, num):
         doc, tag, text = Doc().tagtext()
         with tag("div", ("class", "note")):
-            with tag("i", ("class", "date")):
-                text(note.date)
-            doc.asis(self.get_button())
-            doc.stag("hr")
+            with tag("div", ("class", "note-top")):
+                with tag("i", ("class", "date")):
+                    text(note.date)
+                doc.asis(self.get_button(num))
 
             with tag("b", ("class", "title")):
                 text(note.title)
             doc.stag("br")
 
-            with tag("text"):
-                text(note.text)
+            doc.asis(markdown(note.text))
 
-            doc.stag("br")
-            doc.stag("br")
         return doc.getvalue()
 
+    def get_form(self):
+        doc, tag, text = Doc().tagtext()
+        with tag("div", ("class", "note")):
+            with tag("form", method="POST"):
+                doc.stag("input", type="text",
+                                  name="title",
+                                  placeholder="Title")
+                with tag("textarea", name="text",
+                                     placeholder="Your note here",
+                                     rows=12):
+                    text("")
+
+                doc.stag("input", type="submit",
+                                  value="Create")
+        return doc.getvalue()
 
     def get_body(self, notes):
         doc, tag, text = Doc().tagtext()
         with tag("body"):
-            with tag("div", ("class", "background")):
-                with tag("h1"):
-                    text("Notes App ")
-                    with tag("i", ("class", "fa fa-heart")):
-                        text(" ")
+            with tag("h1", ("class", "logo")):
+                text("Notes App ")
 
-                for note in notes:
-                    doc.asis(self.get_note(note))
+            with tag("div", ("class", "background")):
+                for i, note in enumerate(reversed(notes)):
+                    doc.asis(self.get_note(note, i))
+
+                doc.asis(self.get_form())
 
         return doc.getvalue()
 
@@ -132,6 +155,7 @@ class Generator:
     def save_as_html(self):
         with open("notes.html", "w+") as file:
             file.write(self.get_html())
+        input()
 
 if __name__ == "__main__":
     man = Manager("notes")
@@ -152,10 +176,11 @@ if __name__ == "__main__":
         elif mode == 2:
             man.view_notes()
         elif mode == 3:
-            man.save_with_pickle()
             gen = Generator(man.notes)
             gen.save_as_html()
-            break
+        elif mode == 4:
+            man.save_with_pickle()
+            break;
         else:
             print("Unexpected mode")
 
